@@ -1,0 +1,22 @@
+services:
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    restart: unless-stopped
+    environment:
+      VITE_APP_WS_SERVER_URL: ${EXCALIDRAW_ROOM_URL}
+    expose:
+      - "80"
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        find /usr/share/nginx/html -type f -name "*.js" \
+          -exec sed -i "s#https://oss-collab.excalidraw.com#$${VITE_APP_WS_SERVER_URL}#g" {} \;
+        exec nginx -g 'daemon off;'
+
+  excalidraw-room:
+    image: excalidraw/excalidraw-room:sha-03ff435
+    restart: unless-stopped
+    expose:
+      - "80"
