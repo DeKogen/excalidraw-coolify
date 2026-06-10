@@ -2,8 +2,8 @@
 
 set -u
 
-EXCALIDRAW_URL="${EXCALIDRAW_URL:-https://draw.example.com}"
-EXCALIDRAW_ROOM_URL="${EXCALIDRAW_ROOM_URL:-https://draw-room.example.com}"
+EXCALIDRAW_URL="${EXCALIDRAW_URL:-https://draw.deservin8.com}"
+EXCALIDRAW_ROOM_URL="${EXCALIDRAW_ROOM_URL:-https://draw-room.deservin8.com}"
 failures=0
 
 ok() {

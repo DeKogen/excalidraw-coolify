@@ -5,9 +5,10 @@
 Before updating, export important boards as `.excalidraw` files.
 
 1. Review upstream Excalidraw and `excalidraw-room` changes.
-2. In Coolify, trigger a redeploy with image pulling enabled.
-3. After deployment, test a room from two browser sessions.
-4. In DevTools **Network → WS**, confirm the room host is still your
+2. Pull updated images with `docker compose --env-file .env pull`.
+3. Recreate the stack with `docker compose --env-file .env up -d`.
+4. After deployment, test a room from two browser sessions.
+5. In DevTools **Network → WS**, confirm the room host is still your
    `draw-room` domain.
 
 The frontend uses `latest`, which makes its updates less predictable. The room
@@ -17,7 +18,7 @@ tested frontend image digests too and commit each image change.
 ## Roll back
 
 1. Revert `docker-compose.yml` to the previous tested image tags or digests.
-2. Redeploy the previous Git revision in Coolify.
+2. Redeploy the previous Git revision with Docker Compose.
 3. Retest HTTPS and live collaboration.
 
 Room links and room-server state are not a substitute for exported board
@@ -25,11 +26,11 @@ files. A rollback cannot recover a board that was never exported.
 
 ## Logs
 
-Use the Coolify resource page to inspect logs separately for:
+Use Docker Compose to inspect logs separately:
 
 - `excalidraw`: nginx startup errors and runtime patch failures.
 - `excalidraw-room`: room server startup and WebSocket connection errors.
-- Coolify proxy: routing, TLS, and upstream connection errors.
+- `cloudflared`: tunnel authentication, routing, and upstream errors.
 
 The frontend startup log should not contain `find`, `sed`, permission, or nginx
 errors.
@@ -55,7 +56,7 @@ Back up:
 - exported `.excalidraw` files;
 - the private board-link catalogue;
 - this repository and pinned deployment revisions;
-- Coolify configuration or a record of domains and environment variables.
+- Cloudflare Tunnel hostname configuration and the safely stored tunnel token.
 
 There is no application database or persistent volume in this minimal stack.
 Backing up the stateless frontend container is not useful. Do not treat the

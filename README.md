@@ -1,18 +1,20 @@
-# Excalidraw with live collaboration on Coolify
+# Excalidraw with live collaboration through Cloudflare Tunnel
 
-Minimal Docker Compose stack for deploying a self-hosted Excalidraw frontend and
-the official `excalidraw-room` collaboration server through Coolify.
+Minimal Docker Compose stack for a self-hosted Excalidraw frontend, the
+official `excalidraw-room` collaboration server, and Cloudflare Tunnel.
 
-Coolify provides the reverse proxy, HTTPS certificates, routing, and isolated
-Compose network. This repository therefore does not publish host ports, run an
-extra proxy, define custom networks, or add proxy labels.
+Cloudflare Tunnel provides public HTTPS routing without publishing host ports.
+The existing Amnezia/Xray service keeps TCP port `443`; this stack does not
+stop, reconfigure, or share that port. Inbound TCP ports `80` and `443` are not
+required for Excalidraw.
 
 ## Architecture
 
 - `excalidraw`: static Excalidraw frontend served by nginx.
 - `excalidraw-room`: WebSocket collaboration backend.
-- `https://draw.example.com`: frontend domain assigned in Coolify.
-- `https://draw-room.example.com`: room service domain assigned in Coolify.
+- `cloudflared`: outbound tunnel connection to Cloudflare.
+- `https://draw.deservin8.com`: routes to `http://excalidraw:80`.
+- `https://draw-room.deservin8.com`: routes to `http://excalidraw-room:80`.
 
 One frontend and one room server can serve many independent collaboration
 rooms. Ten boards do not require ten containers. Each board is represented by
@@ -23,7 +25,7 @@ its own live collaboration URL containing a distinct `#room=...` fragment.
 A board is a saved live collaboration room link:
 
 ```text
-https://draw.example.com/#room=...
+https://draw.deservin8.com/#room=...
 ```
 
 For ten boards, create and save ten room links. Do not create ten containers or
@@ -54,41 +56,43 @@ expand at startup.
 `/ws`:
 
 ```dotenv
-EXCALIDRAW_ROOM_URL=https://draw-room.example.com
+EXCALIDRAW_ROOM_URL=https://draw-room.deservin8.com
 ```
 
 The Socket.IO client adds its own path. A normal browser connection therefore
-looks similar to `wss://draw-room.example.com/socket.io/?EIO=4&transport=websocket`.
+looks similar to
+`wss://draw-room.deservin8.com/socket.io/?EIO=4&transport=websocket`.
 
 ## Deploy
 
-1. Copy `.env.example` values into Coolify's environment variables and replace
-   `example.com`.
-2. Follow [docs/coolify-setup.md](docs/coolify-setup.md).
-3. Use [docs/operations.md](docs/operations.md) for routine maintenance.
-4. Use [docs/troubleshooting.md](docs/troubleshooting.md) when deployment or
+1. Follow [docs/cloudflare-tunnel-setup.md](docs/cloudflare-tunnel-setup.md).
+2. Copy `.env.example` to `.env` and replace the placeholder tunnel token.
+3. Validate and start the stack using
+   [docs/post-deploy-checklist.md](docs/post-deploy-checklist.md).
+4. Use [docs/operations.md](docs/operations.md) for routine maintenance.
+5. Use [docs/troubleshooting.md](docs/troubleshooting.md) when deployment or
    collaboration fails.
 
 ## Post-deploy quick test
 
-1. Open `https://draw.example.com` in one browser.
+1. Open `https://draw.deservin8.com` in one browser.
 2. Click **Live collaboration**, start a session, and copy the generated room
    link.
 3. Open that link in a private window or a second browser.
 4. Draw in both windows and confirm changes synchronize both ways.
 5. Open **DevTools → Network → WS** and confirm the WebSocket host is
-   `draw-room.example.com`.
+   `draw-room.deservin8.com`.
 
 A correct connection normally starts with
-`wss://draw-room.example.com/socket.io/`. Its host must not be
+`wss://draw-room.deservin8.com/socket.io/`. Its host must not be
 `oss-collab.excalidraw.com`.
 
 Follow the complete [post-deploy checklist](docs/post-deploy-checklist.md) and
 optionally run:
 
 ```bash
-EXCALIDRAW_URL=https://draw.example.com \
-EXCALIDRAW_ROOM_URL=https://draw-room.example.com \
+EXCALIDRAW_URL=https://draw.deservin8.com \
+EXCALIDRAW_ROOM_URL=https://draw-room.deservin8.com \
 bash scripts/check-deploy.sh
 ```
 
@@ -100,13 +104,13 @@ bash scripts/check-runtime-patch.sh
 
 ## Local Compose validation
 
-Create a local `.env` from `.env.example`, then run:
+Create `.env` from `.env.example`, insert the Cloudflare Tunnel token, then
+validate without starting containers:
 
 ```bash
-docker compose config
+docker compose --env-file .env config -q
 ```
 
-The domains themselves are assigned to services through the Coolify UI.
 `scripts/check-deploy.sh` does not require Docker. `scripts/check-runtime-patch.sh`
 requires access to the Docker daemon and a running Compose stack.
 
@@ -116,6 +120,10 @@ requires access to the Docker daemon and a running Compose stack.
   followed by the two-browser collaboration and DevTools WS checks.
 - The runtime patch depends on the upstream bundle containing the exact
   `https://oss-collab.excalidraw.com` string.
+- The Cloudflare named tunnel and both Public Hostnames must be configured
+  before the public URLs work.
+- The token is a secret. Keep it only in the ignored `.env` file and rotate it
+  if it is exposed.
 - `excalidraw-room` is pinned to the known immutable `sha-03ff435` tag. The
   official image is old and provides collaboration transport, not durable
   storage.

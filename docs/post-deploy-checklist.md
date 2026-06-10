@@ -1,14 +1,33 @@
 # Post-deploy checklist
 
-Use this checklist after the first Coolify deployment and after every frontend
-image update.
+Use this checklist after the first Cloudflare Tunnel deployment and after every
+frontend image update.
+
+## Start and inspect the stack
+
+```bash
+cd /root/excalidraw-coolify
+docker compose --env-file .env config -q
+docker compose --env-file .env up -d
+docker compose ps
+docker compose logs -f cloudflared
+```
+
+The stack must not publish host ports.
+
+Check the public endpoints:
+
+```bash
+curl -I https://draw.deservin8.com
+curl -i "https://draw-room.deservin8.com/socket.io/?EIO=4&transport=polling"
+```
 
 ## Open the frontend
 
 Open:
 
 ```text
-https://draw.example.com
+https://draw.deservin8.com
 ```
 
 The Excalidraw interface should load over HTTPS.
@@ -19,7 +38,7 @@ The Excalidraw interface should load over HTTPS.
 2. Click **Live collaboration**.
 3. Click **Start session**.
 4. Copy the generated link, which looks like
-   `https://draw.example.com/#room=...`.
+   `https://draw.deservin8.com/#room=...`.
 5. Save the complete link in a private `boards.md`.
 
 ## Create 10+ boards
@@ -50,7 +69,7 @@ In Chrome or Edge:
 Expected address:
 
 ```text
-wss://draw-room.example.com/socket.io/?EIO=4&transport=websocket
+wss://draw-room.deservin8.com/socket.io/?EIO=4&transport=websocket
 ```
 
 An address starting with this host is wrong:
@@ -66,8 +85,8 @@ That means the frontend runtime `sed` patch did not apply.
 Run the HTTP and Socket.IO polling checks from any machine with `curl`:
 
 ```bash
-EXCALIDRAW_URL=https://draw.example.com \
-EXCALIDRAW_ROOM_URL=https://draw-room.example.com \
+EXCALIDRAW_URL=https://draw.deservin8.com \
+EXCALIDRAW_ROOM_URL=https://draw-room.deservin8.com \
 bash scripts/check-deploy.sh
 ```
 
@@ -76,7 +95,7 @@ complete the two-browser test.
 
 ## Room backend response
 
-`https://draw-room.example.com` does not need to display a polished page. It is
+`https://draw-room.deservin8.com` does not need to display a polished page. It is
 the room and WebSocket backend, not the Excalidraw frontend. A plain response
 or `404` at its root can still mean the service is reachable; the Socket.IO
 polling and two-browser tests are the useful checks.
